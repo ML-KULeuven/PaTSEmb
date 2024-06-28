@@ -1,0 +1,84 @@
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  DEFAULT_PYTHON_VERSION: "3.10"
+
+# Pip's cache doesn't store the python packages
+# https://pip.pypa.io/en/stable/topics/caching/
+#
+# If you want to also cache the installed packages, you have to install
+# them in a virtualenv and cache it as well.
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+# There are two stages in this pipeline: unittest and workflow
+stages:
+  - unit-test
+
+####################################################################################
+#################################### UNIT TESTS ####################################
+####################################################################################
+
+# A template to run the different  unittests  in the different subpackages in separate jobs
+.unit-test:
+  stage: unit-test  # Run in `unittest`stage
+  variables:
+    PYTHON_VERSION: ""
+  image: python:$PYTHON_VERSION
+  before_script:
+    - python --version ; pip --version
+    - find . -name "requirement*" -type f -exec pip install -r '{}' ';'
+    - pip install pytest pytest-cov     # Packages for testing purposes
+    - pip list
+  script:
+    # Test the requested package, print the code coverage, and generate a xml report of the tests
+    - pytest ./tests/ --cov=patssemb --cov-report term-missing --junitxml=report.xml -v
+  coverage: '/(?i)TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+    expire_in: 1 weeks
+
+# Execute unit tests for multiple Python versions
+unit-test-3.6:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.6"
+
+unit-test-3.7:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.7"
+
+unit-test-3.8:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.8"
+
+unit-test-3.9:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.9"
+
+unit-test-3.10:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.10"
+
+unit-test-3.11:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.11"
+
+unit-test-3.12:
+  extends: .unit-test
+  variables:
+    PYTHON_VERSION: "3.12"
