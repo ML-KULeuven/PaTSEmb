@@ -32,8 +32,11 @@ stages:
   variables:
     PYTHON_VERSION: ""
   image: python:$PYTHON_VERSION
+  services:
+    - maven:3.3.9-jdk-8
   before_script:
     - python --version ; pip --version
+    - java -version
     - find . -name "requirement*" -type f -exec pip install -r '{}' ';'
     - pip install pytest pytest-cov     # Packages for testing purposes
     - pip list
