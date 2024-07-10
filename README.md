@@ -1,5 +1,7 @@
 # PaTSEmb
 
+[![pipeline status](https://gitlab.kuleuven.be/u0143709/patsemb/badges/main/pipeline.svg)](https://gitlab.kuleuven.be/u0143709/patsemb/-/commits/main)
+[![coverage report](https://gitlab.kuleuven.be/u0143709/patsemb/badges/main/coverage.svg)](https://gitlab.kuleuven.be/u0143709/patsemb/-/commits/main)
 
 
 ## License
