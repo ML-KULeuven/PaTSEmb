@@ -1,12 +1,10 @@
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
 
-
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  DEFAULT_PYTHON_VERSION: "3.10"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
@@ -18,9 +16,9 @@ cache:
     - .cache/pip
     - venv/
 
-# There are two stages in this pipeline: unittest and workflow
 stages:
   - unit-test
+  - documentation
 
 ####################################################################################
 #################################### UNIT TESTS ####################################
@@ -28,21 +26,37 @@ stages:
 
 # A template to run the different  unittests  in the different subpackages in separate jobs
 .unit-test:
-  stage: unit-test  # Run in `unittest`stage
+  stage: unit-test
   variables:
     PYTHON_VERSION: ""
   image: python:$PYTHON_VERSION
   services:
     - maven:3.3.9-jdk-8
   before_script:
-    - python --version ; pip --version
+    # Install java
+    - apt update
+    - wget https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz
+    - tar xvf openjdk-21.0.2_linux-x64_bin.tar.gz
+    - mv jdk-21.0.2/ /usr/local/jdk-21
+    - tee -a  /etc/profile.d/jdk21.sh<<EOF
+    - export JAVA_HOME=/usr/local/jdk-21
+    - export PATH=\$PATH:\$JAVA_HOME/bin
+    - EOF
+    - source /etc/profile.d/jdk21.sh
+    # Check the versions
     - java -version
-    - find . -name "requirement*" -type f -exec pip install -r '{}' ';'
-    - pip install pytest pytest-cov     # Packages for testing purposes
+    - python --version
+    - pip --version
+    # Install requirements
+    - pip install -r requirements.txt
+    - pip install pytest pytest-cov  # Packages for testing purposes
     - pip list
+    # Disable numba for proper coverage measurements
+    - export NUMBA_DISABLE_JIT=1
+    - echo $NUMBA_DISABLE_JIT
   script:
     # Test the requested package, print the code coverage, and generate a xml report of the tests
-    - pytest ./tests/ --cov=patssemb --cov-report term-missing --junitxml=report.xml -v
+    - pytest ./tests/ --cov ./patsemb/ --cov-report term-missing --junitxml=report.xml -v
   coverage: '/(?i)TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     when: always
@@ -51,16 +65,6 @@ stages:
     expire_in: 1 weeks
 
 # Execute unit tests for multiple Python versions
-unit-test-3.6:
-  extends: .unit-test
-  variables:
-    PYTHON_VERSION: "3.6"
-
-unit-test-3.7:
-  extends: .unit-test
-  variables:
-    PYTHON_VERSION: "3.7"
-
 unit-test-3.8:
   extends: .unit-test
   variables:
@@ -85,3 +89,38 @@ unit-test-3.12:
   extends: .unit-test
   variables:
     PYTHON_VERSION: "3.12"
+
+####################################################################################
+################################### DOCUMENTATION ##################################
+####################################################################################
+
+# A template for the documentation jobs
+.documentation:
+  stage: documentation
+  image: python:3.10-slim
+  before_script:
+    # Install make
+    - apt-get update && apt-get install make --no-install-recommends -y
+    # Install the required python packages
+    - pip install -r requirements.txt
+    - pip install sphinx toml sphinx_rtd_theme nbsphinx
+    - pip list
+    # Move to the correct directory already
+    - cd docs
+
+# Check the code in the documentation
+doctest:
+  extends: .documentation
+  script:
+    - make doctest
+
+# Generate the documentation
+pages:
+  extends: .documentation
+  script:
+    - make html
+  after_script:
+    - mv docs/_build/html/ ./public/
+  artifacts:
+    paths:
+    - public

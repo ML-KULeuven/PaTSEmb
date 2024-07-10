@@ -2,110 +2,74 @@
 import numpy as np
 import numba as nb
 import scipy
-from typing import List, Union, Dict, Callable
+from typing import List, Union
+from sklearn.exceptions import NotFittedError
 
 from patsemb.discretization.Discretizer import Discretizer
 
 
 class SAXDiscretizer(Discretizer):
 
-    def __init__(self, alphabet_size: int, word_size: int, window_size: int, stride: int, discretize_within: str):
+    def __init__(self,
+                 alphabet_size: int = 5,
+                 word_size: int = 8,
+                 window_size: int = 16,
+                 stride: int = 1,
+                 discretize_within: str = 'time_series'):
         super().__init__(window_size, stride)
         self.alphabet_size: int = alphabet_size
         self.word_size: int = word_size
         self.discretize_within: str = discretize_within
         self.bins_: np.array = None
 
-        # TODO if the methods are numbafied, then this will probably have to be different
-        self.__discretize_within_strategies: Dict[str, Dict[str, Callable]] = {
-            'window': {
-                'fit': self._fit_within_window,
-                'transform': self._transform_within_window
-            },
-            'time_series': {
-                'fit': self._fit_within_time_series,
-                'transform': self._transform_within_time_series
-            },
-            'complete': {
-                'fit': self._fit_within_complete,
-                'transform': self._transform_within_complete
-            }
-        }
-        if self.discretize_within not in self.__discretize_within_strategies:
+        if self.discretize_within not in ['window', 'time_series', 'complete']:
             raise Exception(
                 f"Invalid value for 'within' given: '{discretize_within}'\n"
-                f"Only valid values are: {self.__discretize_within_strategies.keys()}"
+                f"Only valid values are: ['window', 'time_series', 'complete']"
             )
 
-    #####################################################################################
-    # PUBLIC API
-    #####################################################################################
+    def fit(self, dataset: Union[np.array, List[np.array]], y=None) -> 'SAXDiscretizer':
+        if self.discretize_within == 'complete':
+            if isinstance(dataset, List):
+                dataset = np.concatenate(dataset, axis=0)
+            self.bins_ = compute_bins(dataset, self.alphabet_size)
+        return self
 
-    def fit(self, dataset: Union[np.ndarray, List[np.ndarray]], y=None) -> 'SAXDiscretizer':
-        return self.__discretize_within_strategies[self.discretize_within]['fit'](dataset)
+    def transform(self, time_series: np.array) -> np.ndarray:
 
-    def transform(self, dataset: Union[np.ndarray, List[np.ndarray]]) -> np.ndarray:
-        if isinstance(dataset, List):
-            discrete_subsequences = []
-            for time_series in dataset:
-                new_subsequences = self.__discretize_within_strategies[self.discretize_within]['transform'](time_series)
-                discrete_subsequences.extend(new_subsequences)
-            return discrete_subsequences
+        # Check if this SAX-discretizer is fitted (if necessary)
+        if self.bins_ is None and self.discretize_within == 'complete':
+            raise NotFittedError('The SAXDiscretizer is not fitted yet! If you want to discretize using the '
+                                 'discretization level of a collection of time series (i.e., if discretize_within='
+                                 'complete), then the SAXDiscretizer should be fitted first!')
+
+        segments = segment_time_series(time_series, self.window_size, self.stride, self.word_size)
+        discrete_segments = np.empty_like(segments)
+
+        if self.discretize_within == 'window':
+            for i, segment in enumerate(segments):
+                bins = compute_bins(segment, self.alphabet_size)
+                discrete_segments[i, :] = discretize(segment, bins)
+
+        elif self.discretize_within == 'time_series':
+            bins = compute_bins(time_series, self.alphabet_size)
+            for i, segment in enumerate(segments):
+                discrete_segments[i, :] = discretize(segment, bins)
+
+        elif self.discretize_within == 'complete':
+            for i, segment in enumerate(segments):
+                discrete_segments[i, :] = discretize(segment, self.bins_)
+
         else:
-            return self.__discretize_within_strategies[self.discretize_within]['transform'](dataset)
+            raise AttributeError(f"The value for 'discretize_within' is invalid: '{self.discretize_within}'")
 
-    #####################################################################################
-    # FITTING
-    #####################################################################################
-
-    def _fit_within_window(self, dataset: Union[np.ndarray, List[np.ndarray]]) -> 'SAXDiscretizer':
-        return self
-
-    def _fit_within_time_series(self, dataset: Union[np.ndarray, List[np.ndarray]]) -> 'SAXDiscretizer':
-        return self
-
-    def _fit_within_complete(self, dataset: Union[np.ndarray, List[np.ndarray]]) -> 'SAXDiscretizer':
-        self.bins_ = self._compute_bins(dataset)
-        return self
-
-    #####################################################################################
-    # TRANSFORMING
-    #####################################################################################
-
-    # TODO numbafy
-    def _compute_bins(self, data: Union[np.ndarray, List[np.ndarray]]) -> np.array:
-        if isinstance(data, List):
-            data = np.vstack(data)
-        random_variable = scipy.stats.norm(loc=data.mean(), scale=data.std())
-        ppf_inputs = np.linspace(0, 1, self.alphabet_size + 1)
-        return random_variable.ppf(ppf_inputs)
-
-    # TODO numbafy
-    def _segment(self, time_series: np.array) -> np.ndarray:
-        return segment_time_series(
-            time_series=time_series,
-            window_size=self.window_size,
-            stride=self.stride,
-            word_size=self.word_size
-        )
-
-    # TODO numbafy
-    def _transform_within_window(self, time_series: np.array) -> List[np.array]:
-        segments = self._segment(time_series)
-        discrete_segments = []
-        for segment in segments:
-            bins = self._compute_bins(segment)
-            discrete_segments.append(np.digitize(segment, bins))
         return discrete_segments
 
-    # TODO numbafy
-    def _transform_within_time_series(self, time_series: np.array) -> List[np.array]:
-        bins = self._compute_bins(time_series)
-        return [np.digitize(segment, bins) for segment in self._segment(time_series)]
 
-    # TODO numbafy
-    def _transform_within_complete(self, time_series: np.array) -> List[np.array]:
-        return [np.digitize(segment, self.bins_) for segment in self._segment(time_series)]
+def compute_bins(time_series: np.array, alphabet_size: int) -> np.array:
+    random_variable = scipy.stats.norm(loc=time_series.mean(), scale=time_series.std())
+    ppf_inputs = np.linspace(0, 1, alphabet_size + 1)
+    return random_variable.ppf(ppf_inputs)
 
 
 @nb.njit(fastmath=True)
@@ -124,20 +88,6 @@ def segment_time_series(time_series: np.array, window_size: int, stride: int, wo
     return discrete_subsequences
 
 
-def main():
-    discretizer = SAXDiscretizer(
-        alphabet_size=5,
-        word_size=8,
-        window_size=17,
-        stride=3,
-        discretize_within='time_series'
-    )
-
-    ts = np.random.normal(size=10000)
-
-    import timeit
-    print(timeit.timeit(lambda: discretizer.fit_transform(ts), number=20))
-
-
-if __name__ == '__main__':
-    main()
+@nb.njit(fastmath=True)
+def discretize(segment: np.array, bins: np.array) -> np.array:
+    return np.digitize(segment, bins)
