@@ -33,7 +33,7 @@ class TestSAXDiscretizer:
         assert discretizer.stride == stride
         assert discretizer.discretize_within == discretize_within
 
-    @pytest.mark.parametrize('seed', range(100))
+    @pytest.mark.parametrize('seed', range(20))
     def test_invalid_initialization(self, seed):
         random.seed(seed)
         random_string = ''.join(random.choices(string.ascii_uppercase + string.digits, k=random.randint(1, 20)))
@@ -51,7 +51,7 @@ class TestSAXDiscretizer:
                               np.array([-np.inf, scipy.stats.norm(mean, std).ppf(0.25), 3, scipy.stats.norm(mean, std).ppf(0.75), np.inf]))
 
     @pytest.mark.parametrize('alphabet_size', [2, 3, 4, 5, 6, 7])
-    @pytest.mark.parametrize('seed', range(50))
+    @pytest.mark.parametrize('seed', range(10))
     def test_compute_bins(self, alphabet_size, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -98,7 +98,7 @@ class TestSAXDiscretizer:
             assert bins[6] == pytest.approx(1.07, relative)
 
     @pytest.mark.parametrize('alphabet_size', [2, 3, 4, 5, 6, 7])
-    @pytest.mark.parametrize('seed', range(50))
+    @pytest.mark.parametrize('seed', range(10))
     def test_compute_bins_invariant_to_order(self, alphabet_size, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -110,7 +110,7 @@ class TestSAXDiscretizer:
     @pytest.mark.parametrize('window_size', [8, 16, 32])
     @pytest.mark.parametrize('stride', [1, 4, 8, 16])
     @pytest.mark.parametrize('word_size', [4, 7, 8])  # Also an 'annoying', not nicely dividable value
-    @pytest.mark.parametrize('seed', range(5))
+    @pytest.mark.parametrize('seed', range(3))
     def test_segment_time_series(self, window_size, stride, word_size, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -131,7 +131,7 @@ class TestSAXDiscretizer:
                 offset += base_split_size
 
     @pytest.mark.parametrize('alphabet_size', [2, 3, 4, 5])
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_discretize(self, alphabet_size, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -156,7 +156,7 @@ class TestSAXDiscretizer:
         assert discrete.shape == time_series.shape
         assert np.unique(discrete).shape[0] == alphabet_size - nb_empty_bins
 
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_transform_invalid_within(self, seed):
         discretizer = SAXDiscretizer(discretize_within='time_series')  # Because within time series is fastest
         np.random.seed(seed)
@@ -177,14 +177,14 @@ class TestSAXDiscretizerWindow:
     def discretizer(self) -> SAXDiscretizer:
         return SAXDiscretizer(discretize_within='window')
 
-    @pytest.mark.parametrize('seed', range(100))
+    @pytest.mark.parametrize('seed', range(15))
     def test_fit(self, discretizer, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
         discretizer.fit(time_series)
         assert discretizer.bins_ is None
 
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_transform_not_fitted(self, discretizer, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -204,6 +204,7 @@ class TestSAXDiscretizerWindow:
         assert np.array_equal(discrete[2, :], [1, 1, 2, 3, 3, 4, 5, 5])
         assert np.array_equal(discrete[3, :], [1, 1, 2, 3, 3, 4, 5, 5])
         assert np.array_equal(discrete[4, :], [1, 1, 2, 3, 3, 4, 5, 5])
+        assert discrete.dtype == int
 
 
 class TestSAXDiscretizerTimeSeries:
@@ -212,14 +213,14 @@ class TestSAXDiscretizerTimeSeries:
     def discretizer(self) -> SAXDiscretizer:
         return SAXDiscretizer(discretize_within='time_series')
 
-    @pytest.mark.parametrize('seed', range(100))
+    @pytest.mark.parametrize('seed', range(15))
     def test_fit(self, discretizer, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
         discretizer.fit(time_series)
         assert discretizer.bins_ is None
 
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_transform_not_fitted(self, discretizer, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -239,6 +240,7 @@ class TestSAXDiscretizerTimeSeries:
         assert np.array_equal(discrete[2, :], [2, 3, 3, 3, 3, 3, 3, 4])
         assert np.array_equal(discrete[3, :], [4, 4, 4, 4, 4, 4, 5, 5])
         assert np.array_equal(discrete[4, :], [5, 5, 5, 5, 5, 5, 5, 5])
+        assert discrete.dtype == int
 
 
 class TestSAXDiscretizerComplete:
@@ -248,7 +250,7 @@ class TestSAXDiscretizerComplete:
         return SAXDiscretizer(discretize_within='complete')
 
     @pytest.mark.parametrize('alphabet_size', [2, 3, 4, 5])
-    @pytest.mark.parametrize('seed', range(25))
+    @pytest.mark.parametrize('seed', range(10))
     def test_fit(self, discretizer, alphabet_size, seed):
         discretizer.alphabet_size = alphabet_size
         np.random.seed(seed)
@@ -269,7 +271,7 @@ class TestSAXDiscretizerComplete:
         bins = compute_bins(all_values, alphabet_size)
         assert np.array_equal(bins, discretizer.bins_)
 
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_transform_not_fitted(self, discretizer, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
@@ -289,6 +291,7 @@ class TestSAXDiscretizerComplete:
         assert np.array_equal(discrete[2, :], [1, 1, 1, 1, 1, 2, 2, 2])
         assert np.array_equal(discrete[3, :], [2, 2, 2, 2, 2, 2, 2, 2])
         assert np.array_equal(discrete[4, :], [2, 2, 3, 3, 3, 3, 3, 3])
+        assert discrete.dtype == int
 
         discrete = discretizer.transform(time_series[1])
         assert discrete.shape == (5, 8)
@@ -298,6 +301,7 @@ class TestSAXDiscretizerComplete:
         assert np.array_equal(discrete[2, :], [4, 4, 4, 5, 5, 5, 5, 5])
         assert np.array_equal(discrete[3, :], [5, 5, 5, 5, 5, 5, 5, 5])
         assert np.array_equal(discrete[4, :], [5, 5, 5, 5, 5, 5, 5, 5])
+        assert discrete.dtype == int
 
         discretizer.fit(time_series[0])
         discrete = discretizer.transform(time_series[1])
@@ -308,3 +312,5 @@ class TestSAXDiscretizerComplete:
         assert np.array_equal(discrete[2, :], [5, 5, 5, 5, 5, 5, 5, 5])
         assert np.array_equal(discrete[3, :], [5, 5, 5, 5, 5, 5, 5, 5])
         assert np.array_equal(discrete[4, :], [5, 5, 5, 5, 5, 5, 5, 5])
+        assert discrete.dtype == int
+

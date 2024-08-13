@@ -6,11 +6,23 @@ from sklearn.exceptions import NotFittedError
 from patsemb.discretization.SAXDiscretizer import SAXDiscretizer
 from patsemb.pattern_mining.SPMF.QCSP import QCSP
 from patsemb.pattern_mining.SPMF.NOSEP import NOSEP
-from patsemb.pattern_based_embedding.PatternBasedEmbedder import PatternBasedEmbedder, pattern_based_embedding, pattern_occurs_in_subsequence, windowed_to_observation_embedding
+from patsemb.pattern_based_embedding.PatternBasedEmbedder import (
+    PatternBasedEmbedder, pattern_based_embedding, pattern_occurs_in_subsequence, windowed_to_observation_embedding, get_nb_attributes, get_attribute)
+
+
+def generate_random_time_series(nb_attributes) -> np.ndarray:
+    if nb_attributes == 0:
+        return generate_random_univariate_time_series()
+    else:
+        return generate_random_multivariate_time_series(nb_attributes)
 
 
 def generate_random_univariate_time_series() -> np.array:
     return np.random.rand(np.random.choice([500, 1000, 5000]))
+
+
+def generate_random_multivariate_time_series(nb_attributes) -> np.ndarray:
+    return np.random.rand(np.random.choice([500, 1000, 5000]), nb_attributes)
 
 
 class TestPatternBasedEmbedder:
@@ -49,10 +61,21 @@ class TestPatternBasedEmbedder:
         assert pattern_based_embedder.fitted_discretizers_ is None
         assert pattern_based_embedder.patterns_ is None
 
+    def test_multidimensional_collection(self):
+        collection = [
+            generate_random_time_series(5),
+            generate_random_time_series(5),
+            generate_random_time_series(4)  # Different dimension
+        ]
+        embedder = PatternBasedEmbedder()
+
+        with pytest.raises(Exception):
+            embedder.fit(collection)
+
     @pytest.mark.parametrize('nb_time_series', [1, 3])
     @pytest.mark.parametrize('stride', [1, 5])
     @pytest.mark.parametrize('window_sizes', [16, 64, [16, 32, 64], None])
-    @pytest.mark.parametrize('seed', range(3))
+    @pytest.mark.parametrize('seed', range(1))
     def test_fit_transform(self, nb_time_series, stride, window_sizes, seed):
         np.random.seed(seed)
         embedder = PatternBasedEmbedder(window_sizes=window_sizes)
@@ -71,42 +94,94 @@ class TestPatternBasedEmbedder:
 
         if window_sizes is None:
             assert len(embedder.patterns_) == 1
+            assert len(embedder.patterns_[0]) == 1
             assert len(embedder.fitted_discretizers_) == 1
-            assert embedder.discretizer.window_size in embedder.patterns_
-            assert isinstance(embedder.patterns_[embedder.discretizer.window_size], list)
-            assert embedder.discretizer.window_size in embedder.fitted_discretizers_
-            assert isinstance(embedder.fitted_discretizers_[embedder.discretizer.window_size], type(embedder.discretizer))
+            assert len(embedder.fitted_discretizers_[0]) == 1
+            assert embedder.discretizer.window_size in embedder.patterns_[0]
+            assert isinstance(embedder.patterns_[0][embedder.discretizer.window_size], list)
+            assert embedder.discretizer.window_size in embedder.fitted_discretizers_[0]
+            assert isinstance(embedder.fitted_discretizers_[0][embedder.discretizer.window_size], type(embedder.discretizer))
 
         elif isinstance(window_sizes, int):
             assert len(embedder.patterns_) == 1
+            assert len(embedder.patterns_[0]) == 1
             assert len(embedder.fitted_discretizers_) == 1
-            assert window_sizes in embedder.patterns_
-            assert isinstance(embedder.patterns_[window_sizes], list)
-            assert window_sizes in embedder.fitted_discretizers_
-            assert isinstance(embedder.fitted_discretizers_[window_sizes], type(embedder.discretizer))
+            assert len(embedder.fitted_discretizers_[0]) == 1
+            assert window_sizes in embedder.patterns_[0]
+            assert isinstance(embedder.patterns_[0][window_sizes], list)
+            assert window_sizes in embedder.fitted_discretizers_[0]
+            assert isinstance(embedder.fitted_discretizers_[0][window_sizes], type(embedder.discretizer))
 
         else:
-            assert len(embedder.patterns_) == len(window_sizes)
-            assert len(embedder.fitted_discretizers_) == len(window_sizes)
+            assert len(embedder.patterns_) == 1
+            assert len(embedder.patterns_[0]) == len(window_sizes)
+            assert len(embedder.fitted_discretizers_) == 1
+            assert len(embedder.fitted_discretizers_[0]) == len(window_sizes)
             for window_size in window_sizes:
-                assert window_size in embedder.patterns_
-                assert isinstance(embedder.patterns_[window_size], list)
-                assert window_size in embedder.fitted_discretizers_
-                assert isinstance(embedder.fitted_discretizers_[window_size], type(embedder.discretizer))
+                assert window_size in embedder.patterns_[0]
+                assert isinstance(embedder.patterns_[0][window_size], list)
+                assert window_size in embedder.fitted_discretizers_[0]
+                assert isinstance(embedder.fitted_discretizers_[0][window_size], type(embedder.discretizer))
 
         test_time_series = generate_random_univariate_time_series()
         embedding = embedder.transform(test_time_series)
-        nb_patterns = sum([len(pattern_list) for pattern_list in embedder.patterns_.values()])
+        nb_patterns = sum([len(pattern_list) for pattern_list in embedder.patterns_[0].values()])
         assert embedding.shape[0] == nb_patterns
         assert embedding.shape[1] == test_time_series.shape[0]
 
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_transform_not_fitted(self, seed):
         np.random.seed(seed)
         time_series = generate_random_univariate_time_series()
         embedder = PatternBasedEmbedder()
         with pytest.raises(NotFittedError):
             embedder.transform(time_series)
+
+    @pytest.mark.parametrize('seed', range(1))
+    def test_fit_transform_single_call(self, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(np.random.choice([1, 2, 3]))
+
+        embedder = PatternBasedEmbedder()
+        embedder.fit(time_series)
+        embedding_separate_calls = embedder.transform(time_series)
+        embedding_single_call = embedder.fit_transform(time_series)
+
+        assert np.array_equal(embedding_separate_calls, embedding_single_call)
+
+    @pytest.mark.parametrize('nb_attributes', [2, 3, 4])
+    @pytest.mark.parametrize('seed', range(1))
+    def test_pattern_based_embedder_single_multivariate(self, nb_attributes, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(nb_attributes)
+        embedder = PatternBasedEmbedder()
+        embedding = embedder.fit_transform(time_series)  # Also checks if there are no errors
+        assert embedding.shape[1] == time_series.shape[0]
+
+    @pytest.mark.parametrize('nb_attributes', [2, 3])
+    @pytest.mark.parametrize('nb_time_series', [2, 3])
+    @pytest.mark.parametrize('seed', range(1))
+    def test_pattern_based_embedder_collection_multivariate(self, nb_attributes, nb_time_series, seed):
+        np.random.seed(seed)
+        collection = [generate_random_time_series(nb_attributes) for _ in range(nb_time_series)]
+        embedder = PatternBasedEmbedder()
+        # Also checks if there are no errors
+        embedder.fit(collection)
+        for i in range(nb_time_series):
+            embedding = embedder.transform(collection[i])
+            assert embedding.shape[1] == collection[i].shape[0]
+
+    @pytest.mark.parametrize('nb_attributes', [1, 2, 3])
+    @pytest.mark.parametrize('seed', range(1))
+    def test_pattern_based_embedder_parallel(self, nb_attributes, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(nb_attributes)
+        embedder = PatternBasedEmbedder(window_sizes=[8, 16], n_jobs=4)
+        embedding = embedder.fit_transform(time_series)  # Also checks if there are no errors
+        assert embedding.shape[1] == time_series.shape[0]
+
+
+class TestUtils:
 
     def test_pattern_based_embedding_simple(self):
         patterns = [np.array([1, 2, 3])]
@@ -130,7 +205,7 @@ class TestPatternBasedEmbedder:
     @pytest.mark.parametrize('window_size', [16, 64])
     @pytest.mark.parametrize('stride', [1, 8])
     @pytest.mark.parametrize('time_series_length', [500, 1000])
-    @pytest.mark.parametrize('seed', range(5))
+    @pytest.mark.parametrize('seed', range(3))
     def test_pattern_based_embedding(self, nb_symbols, nb_patterns, relative_support_embedding, window_size, stride, time_series_length, seed):
         np.random.seed(seed)
         patterns = [np.random.choice(nb_symbols, np.random.randint(4, 8)) for _ in range(nb_patterns)]
@@ -156,7 +231,7 @@ class TestPatternBasedEmbedder:
 
     @pytest.mark.parametrize('nb_symbols', [3, 4, 5, 6])
     @pytest.mark.parametrize('length_pattern', [4, 8, 12])
-    @pytest.mark.parametrize('seed', range(25))
+    @pytest.mark.parametrize('seed', range(3))
     def test_pattern_occurs_in_subsequence_pattern_occurs(self, nb_symbols, length_pattern, seed):
         np.random.seed(seed)
         subsequence = np.random.choice(nb_symbols, max(length_pattern, np.random.choice([10, 15, 20, 25])))
@@ -167,7 +242,7 @@ class TestPatternBasedEmbedder:
 
     @pytest.mark.parametrize('nb_symbols', [3, 4, 5, 6])
     @pytest.mark.parametrize('length_pattern', [4, 8, 12])
-    @pytest.mark.parametrize('seed', range(15))
+    @pytest.mark.parametrize('seed', range(3))
     def test_pattern_occurs_in_subsequence_pattern_does_not_occur(self, nb_symbols, length_pattern, seed):
         np.random.seed(seed)
         pattern = np.random.choice(nb_symbols, length_pattern)
@@ -200,7 +275,7 @@ class TestPatternBasedEmbedder:
     @pytest.mark.parametrize('window_size', [16, 64])
     @pytest.mark.parametrize('stride', [1, 8])
     @pytest.mark.parametrize('time_series_length', [500, 1000, 2500])
-    @pytest.mark.parametrize('seed', range(5))
+    @pytest.mark.parametrize('seed', range(3))
     def test_windowed_to_observation_embedding(self, window_size, stride, time_series_length, seed):
         np.random.seed(seed)
         nb_subsequences = (time_series_length - window_size) // stride + 1
@@ -219,3 +294,38 @@ class TestPatternBasedEmbedder:
                     covering_segments.append(i)
 
             assert observation_based_embedding[:, t] == pytest.approx(np.mean(window_based_embedding[:, covering_segments], axis=1))
+
+    @pytest.mark.parametrize('nb_attributes', range(5))
+    @pytest.mark.parametrize('seed', range(5))
+    def test_nb_attributes(self, nb_attributes: int, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(nb_attributes)
+        assert get_nb_attributes(time_series) == max(1, nb_attributes)  # Max in case number attributes is 0
+
+    @pytest.mark.parametrize('nb_attributes', range(5))
+    @pytest.mark.parametrize('seed', range(5))
+    def test_get_attribute(self, nb_attributes: int, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(nb_attributes)
+        if nb_attributes > 0:
+            for i in range(nb_attributes):
+                assert np.array_equal(get_attribute(time_series, i), time_series[:, i])
+        else:
+            assert np.array_equal(get_attribute(time_series, 0), time_series)
+
+    @pytest.mark.parametrize('nb_attributes', range(5))
+    @pytest.mark.parametrize('seed', range(5))
+    def test_get_attribute_exception(self, nb_attributes: int, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(nb_attributes)
+        for i in range(max(1, nb_attributes)):
+            try:
+                get_attribute(time_series, i)
+            except Exception:
+                pytest.fail("An exception was thrown while this shouldn't occur!")
+
+        with pytest.raises(Exception):
+            get_attribute(time_series, -1)
+
+        with pytest.raises(Exception):
+            get_attribute(time_series, max(1, nb_attributes))

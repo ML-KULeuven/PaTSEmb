@@ -63,7 +63,7 @@ class SAXDiscretizer(Discretizer):
         else:
             raise AttributeError(f"The value for 'discretize_within' is invalid: '{self.discretize_within}'")
 
-        return discrete_segments
+        return discrete_segments.astype(int)
 
 
 def compute_bins(time_series: np.array, alphabet_size: int) -> np.array:
@@ -74,7 +74,6 @@ def compute_bins(time_series: np.array, alphabet_size: int) -> np.array:
 
 @nb.njit(fastmath=True)
 def segment_time_series(time_series: np.array, window_size: int, stride: int, word_size: int) -> np.ndarray:
-    # TODO can this be improved? especially the second part
     # Already applies PAA
     nb_segments = ((time_series.shape[0] - window_size) // stride) + 1
     start_segments = np.arange(nb_segments) * stride

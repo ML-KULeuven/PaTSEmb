@@ -1,8 +1,6 @@
 
 from .PatternMiner import PatternMiner
-from .SPMF import SPMF
-from .SPMF import NOSEP
-from .SPMF import QCSP
+from .SPMF import SPMF, NOSEP, QCSP
 
 __all__ = [
     'PatternMiner',

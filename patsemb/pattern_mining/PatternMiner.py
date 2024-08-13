@@ -27,6 +27,6 @@ class PatternMiner(abc.ABC):
 
         Returns
         -------
-        self: PatternMiner
-            Returns the instance itself
+        self: List[np.array]
+            The list of mined patterns.
         """
