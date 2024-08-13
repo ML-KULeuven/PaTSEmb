@@ -29,6 +29,10 @@ stages:
   stage: unit-test
   variables:
     PYTHON_VERSION: ""
+    DISABLE_NUMBA: 1
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   image: python:$PYTHON_VERSION
   services:
     - maven:3.3.9-jdk-8
@@ -52,7 +56,7 @@ stages:
     - pip install pytest pytest-cov  # Packages for testing purposes
     - pip list
     # Disable numba for proper coverage measurements
-    - export NUMBA_DISABLE_JIT=1
+    - export NUMBA_DISABLE_JIT=$DISABLE_NUMBA
     - echo $NUMBA_DISABLE_JIT
   script:
     # Test the requested package, print the code coverage, and generate a xml report of the tests
@@ -64,7 +68,21 @@ stages:
       junit: report.xml
     expire_in: 1 weeks
 
-# Execute unit tests for multiple Python versions
+# Execute a faster set of unit tests for only one Python version
+# Will only be executed for non-merge requests to the default branch
+unit-test-fast:
+  extends: .unit-test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: never
+    - when: on_success
+  variables:
+    PYTHON_VERSION: "3.10"
+    DISABLE_NUMBA: 0
+
+# Execute extensive unit tests for multiple Python versions
 unit-test-3.8:
   extends: .unit-test
   variables:
@@ -98,6 +116,9 @@ unit-test-3.12:
 .documentation:
   stage: documentation
   image: python:3.10-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   before_script:
     # Install make
     - apt-get update && apt-get install make --no-install-recommends -y

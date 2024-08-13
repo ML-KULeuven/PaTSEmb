@@ -197,3 +197,6 @@ cython_debug/
 ### MANUAL IGNORES
 /data/
 /venv_documentation/
+*tmp.*
+*temp.*
+

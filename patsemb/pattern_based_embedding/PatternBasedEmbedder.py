@@ -1,7 +1,9 @@
-import copy
+
 
 import numpy as np
 import numba as nb
+import copy
+import multiprocessing
 from typing import Union, List, Dict, Optional
 
 from patsemb.discretization.Discretizer import Discretizer
@@ -43,6 +45,9 @@ class PatternBasedEmbedder:
     relative_support_embedding: bool, default=True
         Whether to construct an embedding using the relative support or a
         binary value indicating if the pattern occurs in a subsequence.
+    n_jobs: int, default=None
+        The number of parallel jobs to use for mining the patterns within the
+        time series and constructing the pattern-based embedding.
 
     Attributes
     ----------
@@ -55,10 +60,6 @@ class PatternBasedEmbedder:
         The mined sequential patterns. The key of each item in the dictionary
         equals the window size in which the patterns were mined, while the value
         equals the mined patterns.
-
-    See Also
-    --------
-    MultivariatePatternBasedEmbedder: Construct a pattern-based embedding for multivariate time series.
 
     References
     ----------
@@ -73,7 +74,8 @@ class PatternBasedEmbedder:
                  pattern_miner: PatternMiner = None,
                  *,
                  window_sizes: Union[List[int], int] = None,
-                 relative_support_embedding: bool = True):
+                 relative_support_embedding: bool = True,
+                 n_jobs: Optional[int] = None):
         self.discretizer: Discretizer = discretizer or SAXDiscretizer()
         self.pattern_miner: PatternMiner = pattern_miner or QCSP()
         self.window_sizes: List[int] = \
@@ -81,22 +83,27 @@ class PatternBasedEmbedder:
             else [window_sizes] if isinstance(window_sizes, int) \
             else window_sizes
         self.relative_support_embedding: bool = relative_support_embedding
+        self.n_jobs: Optional[int] = n_jobs
+        self.fitted_discretizers_: List[Dict[int, Discretizer]]
+        self.patterns_: List[Dict[int, List[np.array]]]
 
-        self.fitted_discretizers_: Optional[Dict[int, Discretizer]] = None
-        self.patterns_: Optional[Dict[int, List[np.array]]] = None
+        self.fitted_discretizers_: Optional[List[Dict[int, Discretizer]]] = None
+        self.patterns_: Optional[List[Dict[int, List[np.array]]]] = None
 
     def fit(self, dataset: Union[np.ndarray, List[np.ndarray]], y=None) -> 'PatternBasedEmbedder':
         """
         Fit this pattern-based embedder using a (collection of) time series.
         This is achieved by mining patterns in the discrete representation of
-        the given time series.
+        the given time series. If multivariate time series are given, then each
+        time series must have the same dimension!
 
         Parameters
         ----------
-        dataset: np.array of shape (n_samples,) or list of np.array of shape (n_samples,)
+        dataset: np.ndarray of shape (n_samples, n_attributes) or list of np.ndarray of shape (n_samples, n_attributes)
             The (collection of) time series to use for fitting this pattern-based embedder.
             If a collection of time series is given, then each collection may have a
-            different length.
+            different length. For univariate time series, the given numpy arrays may
+            be one-dimensional.
         y: Ignored
             Is passed for fitting the discretizer, but will typically not be used and
             is only present here for API consistency by convention.
@@ -106,65 +113,161 @@ class PatternBasedEmbedder:
         self: PatternBasedEmbedder
             Returns the instance itself
         """
+        if not isinstance(dataset, List):
+            dataset = [dataset]
+
+        # Check the input dimensions
+        dimensions = list(get_nb_attributes(time_series) for time_series in dataset)
+        if len(set(dimensions)) > 1:
+            raise Exception("If a collection of time series is given to PatternBasedEmbedder.fit(), then "
+                            "all time series should have the same number of attributes. Now time series with "
+                            f"the following number of attributes were provided: {dimensions}")
+        dimension = dimensions[0]
+
         # Initialize the fitted discretizers and patterns
-        self.fitted_discretizers_ = {}
-        self.patterns_ = {}
+        self.fitted_discretizers_ = [{} for _ in range(dimension)]
+        self.patterns_ = [{} for _ in range(dimension)]
 
-        # Treat each resolution independently
-        for window_size in self.window_sizes:
-            # Fit the discretizer
-            discretizer = copy.deepcopy(self.discretizer)
-            discretizer.window_size = window_size
-            discretizer.fit(dataset, y)
-            self.fitted_discretizers_[window_size] = discretizer
+        # Create the embedding
+        if self.n_jobs is None or self.n_jobs == 1:
 
-            # Convert the dataset to symbolic subsequences
-            if isinstance(dataset, List):
-                discrete_subsequences = np.concatenate([discretizer.transform(time_series) for time_series in dataset])
-            else:
-                discrete_subsequences = discretizer.transform(dataset)
+            # Treat each attribute & resolution independently
+            for attribute in range(dimension):
+                attribute_data = [get_attribute(time_series, attribute) for time_series in dataset]
+                for window_size in self.window_sizes:
+                    # Fit the discretizer
+                    discretizer = copy.deepcopy(self.discretizer)
+                    discretizer.window_size = window_size
+                    discretizer.fit(attribute_data, y)
 
-            # Mine the patterns
-            patterns = self.pattern_miner.mine(discrete_subsequences)
+                    # Convert the dataset to symbolic subsequences
+                    discrete_subsequences = np.concatenate([discretizer.transform(time_series) for time_series in attribute_data])
 
-            # Save the results
-            self.fitted_discretizers_[window_size] = discretizer
-            self.patterns_[window_size] = patterns
+                    # Mine the patterns
+                    patterns = self.pattern_miner.mine(discrete_subsequences)
+
+                    # Save the results
+                    self.fitted_discretizers_[attribute][window_size] = discretizer
+                    self.patterns_[attribute][window_size] = patterns
+
+        else:
+            attribute_data = [
+                [get_attribute(time_series, attribute) for time_series in dataset]
+                for attribute in range(dimension)
+            ]
+            jobs = [
+                (attribute_data[attribute], y, attribute, window_size)
+                for attribute in range(dimension)
+                for window_size in self.window_sizes
+             ]
+            with multiprocessing.Pool(processes=min(self.n_jobs, len(jobs))) as pool:
+                pool_results = pool.starmap(self._fit_parallel, jobs)
+
+            for attribute, discretizer_dict, patterns_dict in pool_results:
+                self.fitted_discretizers_[attribute].update(discretizer_dict)
+                self.patterns_[attribute].update(patterns_dict)
 
         return self
 
+    def _fit_parallel(self, attribute_data: List[np.array], y, attribute: int, window_size: int):
+        """
+        Executes one sub-process for fitting this PatternBasedEmbedder, i.e., mine the
+        patterns in the data of one attribute in one resolution. This method should not
+        be used independently.
+        """
+        # Set and fit the discretizer
+        discretizer = copy.deepcopy(self.discretizer)
+        discretizer.window_size = window_size
+        discretizer.fit(attribute_data, y)
+
+        # Convert the dataset to symbolic subsequences
+        discrete_subsequences = np.concatenate([discretizer.transform(time_series) for time_series in attribute_data])
+
+        # Mine the patterns
+        patterns = self.pattern_miner.mine(discrete_subsequences)
+
+        # Return all information
+        return attribute, {window_size: discretizer}, {window_size: patterns}
+
     def transform(self, time_series: np.ndarray) -> np.ndarray:
         """
-        Fit this pattern-based embedder using a (collection of) time series.
-        This is achieved by mining patterns in the discrete representation of
-        the given time series.
+        Transform the given time series into a pattern-based embedding.
 
         Parameters
         ----------
-        time_series: np.array of shape (n_samples,)
-            The time series to transform into a pattern-based embedding.
+        time_series: np.array of shape (n_samples, n_attributes)
+            The time series to transform into a pattern-based embedding. A
+            univariate time series may be one-dimensional.
 
         Returns
         -------
-        pattern_based_embedding: np.array of shape (n_patterns, time_series_length)
+        pattern_based_embedding: np.ndarray of shape (n_patterns, n_samples)
             The pattern-based embedding, which has a column for each observation in
             the time series and a row for each mined pattern. Each column serves as
             a feature vector for the corresponding time stamp.
         """
+        # Check if this pattern-based embedder has been initialized
         if self.patterns_ is None:
             raise NotFittedError("The PatternBasedEmbedder should be fitted before calling the '.transform()' method!")
 
-        return np.concatenate([
-            pattern_based_embedding(
-                self.patterns_[window_size],
-                self.fitted_discretizers_[window_size].transform(time_series),
-                self.relative_support_embedding,
-                self.discretizer.window_size,
-                self.discretizer.stride,
-                time_series.shape[0]
-            )
-            for window_size in self.window_sizes
-        ])
+        # Check if the dimension of the time series matches
+        if len(self.patterns_) != get_nb_attributes(time_series):
+            raise Exception(f'The given time series has a dimension of {get_nb_attributes(time_series)}, but this embedder '
+                            f'has been fitted for {len(self.patterns_)} attributes')
+
+        # Create the pattern-based embedding
+        if self.n_jobs is None or self.n_jobs == 1:
+            return np.concatenate([
+                pattern_based_embedding(
+                    self.patterns_[attribute][window_size],
+                    self.fitted_discretizers_[attribute][window_size].transform(get_attribute(time_series, attribute)),
+                    self.relative_support_embedding,
+                    window_size,
+                    self.discretizer.stride,
+                    time_series.shape[0]
+                )
+                for attribute in range(get_nb_attributes(time_series))
+                for window_size in self.window_sizes
+            ])
+
+        else:
+            jobs = [
+                (
+                    self.patterns_[attribute][window_size],
+                    self.fitted_discretizers_[attribute][window_size].transform(get_attribute(time_series, attribute)),
+                    self.relative_support_embedding,
+                    window_size,
+                    self.discretizer.stride,
+                    time_series.shape[0]
+                )
+                for attribute in range(get_nb_attributes(time_series))
+                for window_size in self.window_sizes
+             ]
+            with multiprocessing.Pool(processes=min(self.n_jobs, len(jobs))) as pool:
+                return np.concatenate(pool.starmap(pattern_based_embedding, jobs))
+
+    def fit_transform(self, time_series: np.ndarray, y=None) -> np.ndarray:
+        """
+        Fit this PatternBasedEmbedder using the given time series (i.e., mine the
+        patterns in the discrete representation of the time series) and immediately
+        transform the time series into a pattern-based embedding.
+
+        Parameters
+        ----------
+        time_series: np.ndarray of shape (n_samples, n_attributes)
+            The multivariate time series to transform into a pattern-based embedding.
+        y: Ignored
+            Is passed for fitting the discretizer, but will typically not be used and
+            is only present here for API consistency by convention.
+
+        Returns
+        -------
+        pattern_based_embedding: np.ndarray of shape (n_patterns, n_samples)
+            The pattern-based embedding, which has a column for each observation in
+            the time series and a row for each mined pattern. Each column serves as
+            a feature vector for the corresponding time stamp.
+        """
+        return self.fit(time_series, y).transform(time_series)
 
 
 def pattern_based_embedding(
@@ -198,7 +301,7 @@ def pattern_based_embedding(
 
     Returns
     -------
-    pattern_based_embedding: np.array of shape (n_patterns, time_series_length)
+    pattern_based_embedding: np.array of shape (n_patterns, n_samples)
         The pattern-based embedding, which has a column for each observation in
         the time series and a row for each given pattern. Each column serves as
         a feature vector for the corresponding time stamp.
@@ -211,7 +314,6 @@ def pattern_based_embedding(
 
     # Include the relative support if required
     if relative_support_embedding:
-        print(pattern_occurs.mean(axis=1)[:5])
         pattern_occurs *= pattern_occurs.mean(axis=1)[:, np.newaxis]
 
     # Convert to embedding matrix per time step
@@ -298,3 +400,15 @@ def windowed_to_observation_embedding(window_based_embedding: np.ndarray, window
 
     # Return the observation-based embedding
     return observation_based_embedding
+
+
+def get_nb_attributes(time_series: np.ndarray) -> int:
+    return 1 if len(time_series.shape) == 1 else time_series.shape[1]
+
+
+def get_attribute(time_series: np.ndarray, attribute: int) -> np.array:
+    if not (0 <= attribute < get_nb_attributes(time_series)):
+        raise Exception(f'Trying to access attribute {attribute} in {get_nb_attributes(time_series)}-dimensional time series!')
+    return time_series if len(time_series.shape) == 1 else time_series[:, attribute]
+
+

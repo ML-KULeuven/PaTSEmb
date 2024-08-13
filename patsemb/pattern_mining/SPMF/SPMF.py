@@ -66,12 +66,15 @@ class SPMF(PatternMiner, abc.ABC):
 
         # Execute the java command to mine the sequences
         command = f"java -jar {pathlib.Path(__file__).parent}/spmf.jar run {self.mining_algorithm()} {input_file_name} {output_file_name} {self.hyperparameters()}"
-        _ = subprocess.run(command, shell=True, capture_output=True)
-        # _ = subprocess.run(command, stdout=subprocess.DEVNULL, shell=True)
+        output = subprocess.run(command, shell=True, capture_output=True)
 
         # Read the output file
         with open(output_file_name, 'r') as output_file:
             patterns = self._decode_output_string(output_file.readlines())
+
+        # Raise the exception if something went wrong
+        if output.stderr and len(patterns) == 0:
+            raise Exception(output.stderr.decode())
 
         # Clean up the files
         os.remove(input_file_name)
