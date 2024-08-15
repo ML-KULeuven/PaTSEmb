@@ -189,15 +189,17 @@ class PatternBasedEmbedder:
         # Return all information
         return attribute, {window_size: discretizer}, {window_size: patterns}
 
-    def transform(self, time_series: np.ndarray) -> np.ndarray:
+    def transform(self, time_series: np.ndarray, *, return_embedding_per_attribute: bool = False) -> (np.ndarray, Optional[List[np.ndarray]]):
         """
         Transform the given time series into a pattern-based embedding.
 
         Parameters
         ----------
-        time_series: np.array of shape (n_samples, n_attributes)
+        time_series: np.ndarray of shape (n_samples, n_attributes)
             The time series to transform into a pattern-based embedding. A
             univariate time series may be one-dimensional.
+        return_embedding_per_attribute: bool, default=False
+            Whether to return the embedding matrix for each attribute independently.
 
         Returns
         -------
@@ -205,6 +207,10 @@ class PatternBasedEmbedder:
             The pattern-based embedding, which has a column for each observation in
             the time series and a row for each mined pattern. Each column serves as
             a feature vector for the corresponding time stamp.
+        embedding_per_attribute: optional, list of length n_attributes with np.ndarray of shape (n_patterns, n_samples)
+            The embedding matrix for each individual attribute. The matrix at position
+            i correspond to the embedding for attribute i. This value is only returned
+            if `return_embedding_per_attribute=True`.
         """
         # Check if this pattern-based embedder has been initialized
         if self.patterns_ is None:
@@ -217,22 +223,25 @@ class PatternBasedEmbedder:
 
         # Create the pattern-based embedding
         if self.n_jobs is None or self.n_jobs == 1:
-            return np.concatenate([
-                pattern_based_embedding(
-                    self.patterns_[attribute][window_size],
-                    self.fitted_discretizers_[attribute][window_size].transform(get_attribute(time_series, attribute)),
-                    self.relative_support_embedding,
-                    window_size,
-                    self.discretizer.stride,
-                    time_series.shape[0]
-                )
+            embedding_per_attribute = [
+                np.concatenate([
+                    pattern_based_embedding(
+                        self.patterns_[attribute][window_size],
+                        self.fitted_discretizers_[attribute][window_size].transform(get_attribute(time_series, attribute)),
+                        self.relative_support_embedding,
+                        window_size,
+                        self.discretizer.stride,
+                        time_series.shape[0]
+                    )
+                    for window_size in self.window_sizes
+                ])
                 for attribute in range(get_nb_attributes(time_series))
-                for window_size in self.window_sizes
-            ])
+            ]
 
         else:
             jobs = [
                 (
+                    attribute,
                     self.patterns_[attribute][window_size],
                     self.fitted_discretizers_[attribute][window_size].transform(get_attribute(time_series, attribute)),
                     self.relative_support_embedding,
@@ -242,11 +251,30 @@ class PatternBasedEmbedder:
                 )
                 for attribute in range(get_nb_attributes(time_series))
                 for window_size in self.window_sizes
-             ]
-            with multiprocessing.Pool(processes=min(self.n_jobs, len(jobs))) as pool:
-                return np.concatenate(pool.starmap(pattern_based_embedding, jobs))
+            ]
 
-    def fit_transform(self, time_series: np.ndarray, y=None) -> np.ndarray:
+            with multiprocessing.Pool(processes=min(self.n_jobs, len(jobs))) as pool:
+                results = pool.starmap(self._transform_parallel, jobs)
+
+            embedding_per_attribute = [list() for _ in range(get_nb_attributes(time_series))]
+            for attribute, embedding in results:
+                embedding_per_attribute[attribute].append(embedding)
+            embedding_per_attribute = [np.concatenate(embedding) for embedding in embedding_per_attribute]
+
+        if return_embedding_per_attribute:
+            return np.concatenate(embedding_per_attribute), embedding_per_attribute
+        else:
+            return np.concatenate(embedding_per_attribute)
+
+    @staticmethod
+    def _transform_parallel(attribute, *args) -> (int, np.ndarray):
+        """
+        Wrapper approach for transforming a time series to a pattern-based embedding
+        in a parallel setting. This method should not be used directly.
+        """
+        return attribute, pattern_based_embedding(*args)
+
+    def fit_transform(self, time_series: np.ndarray, y=None, *, return_embedding_per_attribute: bool = False) -> (np.ndarray, Optional[List[np.ndarray]]):
         """
         Fit this PatternBasedEmbedder using the given time series (i.e., mine the
         patterns in the discrete representation of the time series) and immediately
@@ -259,6 +287,8 @@ class PatternBasedEmbedder:
         y: Ignored
             Is passed for fitting the discretizer, but will typically not be used and
             is only present here for API consistency by convention.
+        return_embedding_per_attribute: bool, default=False
+            Whether to return the embedding matrix for each attribute independently.
 
         Returns
         -------
@@ -266,8 +296,12 @@ class PatternBasedEmbedder:
             The pattern-based embedding, which has a column for each observation in
             the time series and a row for each mined pattern. Each column serves as
             a feature vector for the corresponding time stamp.
+        embedding_per_attribute: optional, list of length n_attributes with np.ndarray of shape (n_patterns, n_samples)
+            The embedding matrix for each individual attribute. The matrix at position
+            i correspond to the embedding for attribute i. This value is only returned
+            if `return_embedding_per_attribute=True`.
         """
-        return self.fit(time_series, y).transform(time_series)
+        return self.fit(time_series, y).transform(time_series, return_embedding_per_attribute=return_embedding_per_attribute)
 
 
 def pattern_based_embedding(
@@ -410,5 +444,3 @@ def get_attribute(time_series: np.ndarray, attribute: int) -> np.array:
     if not (0 <= attribute < get_nb_attributes(time_series)):
         raise Exception(f'Trying to access attribute {attribute} in {get_nb_attributes(time_series)}-dimensional time series!')
     return time_series if len(time_series.shape) == 1 else time_series[:, attribute]
-
-

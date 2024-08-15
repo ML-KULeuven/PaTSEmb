@@ -137,6 +137,14 @@ class TestPatternBasedEmbedder:
         with pytest.raises(NotFittedError):
             embedder.transform(time_series)
 
+    def test_transform_different_dimension(self):
+        time_series1 = generate_random_time_series(2)
+        time_series2 = generate_random_time_series(5)
+        embedder = PatternBasedEmbedder()
+        embedder.fit(time_series1)
+        with pytest.raises(Exception):
+            embedder.transform(time_series2)
+
     @pytest.mark.parametrize('seed', range(1))
     def test_fit_transform_single_call(self, seed):
         np.random.seed(seed)
@@ -179,6 +187,46 @@ class TestPatternBasedEmbedder:
         embedder = PatternBasedEmbedder(window_sizes=[8, 16], n_jobs=4)
         embedding = embedder.fit_transform(time_series)  # Also checks if there are no errors
         assert embedding.shape[1] == time_series.shape[0]
+
+    @pytest.mark.parametrize('nb_attributes', [1, 2, 3])
+    @pytest.mark.parametrize('nb_jobs', [1, 4])
+    @pytest.mark.parametrize('seed', range(1))
+    def test_separate_output(self, nb_attributes, nb_jobs, seed):
+        np.random.seed(seed)
+        time_series = generate_random_time_series(nb_attributes)
+        embedder = PatternBasedEmbedder(window_sizes=[8, 16], n_jobs=nb_jobs)
+        embedding, embedding_separate = embedder.fit_transform(time_series, return_embedding_per_attribute=True)  # Also checks if there are no errors
+        assert embedding.shape[1] == time_series.shape[0]
+        assert len(embedding_separate) == nb_attributes
+        assert sum(e.shape[0] for e in embedding_separate) == embedding.shape[0]
+
+    def test_fit_parallel(self):
+        # Just making sure that it can execute without errors + some basic checks
+        embedder = PatternBasedEmbedder(window_sizes=8)
+        univariate_time_series = generate_random_univariate_time_series()
+        args = ([univariate_time_series], None, 0, 8)
+        attribute, discretizer_dict, patterns_dict = embedder._fit_parallel(*args)
+        assert attribute == 0
+        assert len(discretizer_dict) == 1
+        assert 8 in discretizer_dict
+        assert len(patterns_dict) == 1
+        assert 8 in patterns_dict
+
+    def test_transform_parallel(self):
+        embedder = PatternBasedEmbedder(window_sizes=8)
+        univariate_time_series = generate_random_univariate_time_series()
+        embedder.fit(univariate_time_series)
+        args = (
+            embedder.patterns_[0][8],
+            embedder.fitted_discretizers_[0][8].transform(get_attribute(univariate_time_series, 0)),
+            embedder.relative_support_embedding,
+            8,
+            embedder.discretizer.stride,
+            univariate_time_series.shape[0]
+        )
+        attribute, embedding = embedder._transform_parallel(0, *args)
+        assert attribute == 0
+        assert np.array_equal(embedding, pattern_based_embedding(*args))
 
 
 class TestUtils:
