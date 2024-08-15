@@ -68,15 +68,11 @@ stages:
       junit: report.xml
     expire_in: 1 weeks
 
-# Execute a faster set of unit tests for only one Python version
-# Will only be executed for non-merge requests to the default branch
-unit-test-fast:
+# Execute all the unit tests with Numba, ensuring fast execution
+# This job should always be performed
+unit-test-numba:
   extends: .unit-test
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: never
     - when: on_success
   variables:
     PYTHON_VERSION: "3.10"
