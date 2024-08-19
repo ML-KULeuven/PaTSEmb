@@ -69,10 +69,14 @@ stages:
     expire_in: 1 weeks
 
 # Execute all the unit tests with Numba, ensuring fast execution
-# This job should always be performed
+# Should only run when the other jobs are not being executed (i.e., not for merge requests to main branch)
 unit-test-numba:
   extends: .unit-test
   rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: never
     - when: on_success
   variables:
     PYTHON_VERSION: "3.10"
