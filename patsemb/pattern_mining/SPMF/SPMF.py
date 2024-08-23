@@ -32,7 +32,7 @@ class SPMF(PatternMiner, abc.ABC):
        https://doi.org/10.1007/978-3-319-46131-1_8
     """
 
-    def mine(self, discrete_sequences: np.ndarray) -> List[np.array]:
+    def mine(self, discrete_sequences: np.ndarray, y=None) -> List[np.array]:
         """
         Mine frequent sequential patterns in the given symbolic representation
         of the time series. First, the discrete subsequences are written to a
@@ -49,6 +49,8 @@ class SPMF(PatternMiner, abc.ABC):
             consists of ´n_symbolic_sequences´ subsequences, each one having
             ´length_symbolic_sequences´ symbols. The sequences are provided
             as the rows of the given input matrix.
+        y: Ignored
+            Not used, present here for API consistency by convention.
 
         Returns
         -------

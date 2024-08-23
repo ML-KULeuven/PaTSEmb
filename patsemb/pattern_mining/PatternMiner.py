@@ -13,7 +13,7 @@ class PatternMiner(abc.ABC):
     """
 
     @abc.abstractmethod
-    def mine(self, discrete_sequences: np.ndarray) -> List[np.array]:
+    def mine(self, discrete_sequences: np.ndarray, y=None) -> List[np.array]:
         """
         Fit this discretizer for the given (collection of) time series.
 
@@ -24,6 +24,8 @@ class PatternMiner(abc.ABC):
             consists of ´n_symbolic_sequences´ subsequences, each one having
             ´length_symbolic_sequences´ symbols. The sequences are provided
             as the rows of the given input matrix.
+        y: Ignored
+            Not used, present here for API consistency by convention.
 
         Returns
         -------
