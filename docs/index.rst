@@ -12,3 +12,4 @@ The source is available on `GitLab <https://gitlab.kuleuven.be/m-group-campus-br
    :caption: Getting started
 
    getting_started/installation
+   getting_started/examples
