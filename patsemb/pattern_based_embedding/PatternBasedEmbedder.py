@@ -144,7 +144,7 @@ class PatternBasedEmbedder:
                     discrete_subsequences = np.concatenate([discretizer.transform(time_series) for time_series in attribute_data])
 
                     # Mine the patterns
-                    patterns = self.pattern_miner.mine(discrete_subsequences)
+                    patterns = self.pattern_miner.mine(discrete_subsequences, y)
 
                     # Save the results
                     self.fitted_discretizers_[attribute][window_size] = discretizer
@@ -184,7 +184,7 @@ class PatternBasedEmbedder:
         discrete_subsequences = np.concatenate([discretizer.transform(time_series) for time_series in attribute_data])
 
         # Mine the patterns
-        patterns = self.pattern_miner.mine(discrete_subsequences)
+        patterns = self.pattern_miner.mine(discrete_subsequences, y)
 
         # Return all information
         return attribute, {window_size: discretizer}, {window_size: patterns}
