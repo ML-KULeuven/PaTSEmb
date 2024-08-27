@@ -3,6 +3,69 @@
 [![pipeline status](https://gitlab.kuleuven.be/u0143709/patsemb/badges/main/pipeline.svg)](https://gitlab.kuleuven.be/u0143709/patsemb/-/commits/main)
 [![coverage report](https://gitlab.kuleuven.be/u0143709/patsemb/badges/main/coverage.svg)](https://gitlab.kuleuven.be/u0143709/patsemb/-/commits/main)
 
+Welcome to ``PaTSEmb``, a fast and extendable Python package for creating a pattern-based embedding
+of the time series. This is an embedding of the time series which contains information
+about the typical shapes are occurring at which locations in the time series. 
+Below, we give a small example of how to do this, but be sure to check out the 
+[documentation](https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154a9a19db833f1f7.pages.gitlab.kuleuven.be/index.html)!
+
+## Installation
+
+You can install ``PaTSEmb`` using the following command:
+```
+pip install patsemb
+```
+If you want to mine frequent, sequential patterns, Java 1.7 or higher should also be 
+available on your machine. More information about installing ``PaTSEmb`` can be found 
+in the [documentation](https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154a9a19db833f1f7.pages.gitlab.kuleuven.be/getting_started/installation.html).
+
+## Example 
+
+The code snippet below shows how to create the pattern-based embedding of a 
+time series. Be sure to check out the [example notebook](https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/blob/main/notebooks/examples.ipynb?ref_type=heads) 
+for more examples!
+
+```python
+from patsemb.discretization import SAXDiscretizer
+from patsemb.pattern_mining import QCSP
+from patsemb.pattern_based_embedding import PatternBasedEmbedder
+
+# Specify a discretizer and pattern miner, or use the default values
+pattern_based_embedder = PatternBasedEmbedder(
+    discretizer=SAXDiscretizer(alphabet_size=8, word_size=5),
+    pattern_miner=QCSP(minimum_support=3, top_k_patterns=20)
+)
+
+# Create the pattern-based embedding
+time_series = ...  # Load here your time series as a numpy array
+embedding = pattern_based_embedder.fit_transform(time_series)
+```
+
+## Contact
+
+Feel free to email to [louis.carpentier@kuleuven.be](mailto:louis.carpentier@kuleuven.be) if 
+there are any questions, remarks, ideas, ...
+
+## Acknowledgments 
+
+If you use ``PaTSEmb`` in your research or project, please add the following citation:
+
+```bibtex
+@inproceedings{carpentier2024pattern,
+    title={Pattern-based Time Series Semantic Segmentation with Gradual State Transitions},
+    author={Carpentier, Louis and Feremans, Len and Meert, Wannes and Verbeke, Mathias},
+    booktitle={Proceedings of the 2024 SIAM International Conference on Data Mining (SDM)},
+    pages={316--324},
+    year={2024},
+    month={April},
+    organization={SIAM},
+    doi={10.1137/1.9781611978032.36}
+}
+```
+> L. Carpentier, L. Feremans, W. Meert, and M. Verbeke. 
+> "Pattern-based time series semantic segmentation with gradual state transitions". 
+> In Proceedings of the 2024 SIAM International Conference on Data Mining (SDM), 
+> pages 316–324. SIAM, april 2024. doi: [10.1137/1.9781611978032.36](https://doi.org/10.1137/1.9781611978032.36).
 
 ## License
 

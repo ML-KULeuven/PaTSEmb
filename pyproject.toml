@@ -1,6 +1,6 @@
 [project]
 name = "patsemb"
-version = "0.0.1"
+version = "0.1.0"
 description = "PaTSEmb: Pattern-based Time Series Embedding"
 requires-python = ">=3.8,<=3.12"
 authors = [
@@ -26,7 +26,10 @@ content-type = "text/markdown"
 file = "LICENSE"
 
 [project.urls]
-repository = "https://gitlab.kuleuven.be/u0143709/patsemb"
+homepage = "https://pypi.org/project/patsemb/"
+repository = "https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb"
+changelog = "https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/blob/main/CHANGELOG.md"
+documentation = "https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154a9a19db833f1f7.pages.gitlab.kuleuven.be/"
 
 [build-system]
 requires = ["setuptools", "wheel", "build"]

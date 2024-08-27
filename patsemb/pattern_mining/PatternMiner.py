@@ -6,10 +6,6 @@ from typing import List
 class PatternMiner(abc.ABC):
     """
     Mine patterns in a discrete representation of the time series.
-
-    See Also
-    --------
-    SPMF: Mine frequent sequential patterns
     """
 
     @abc.abstractmethod

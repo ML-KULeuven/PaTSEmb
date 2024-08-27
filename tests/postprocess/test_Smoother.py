@@ -75,7 +75,7 @@ class TestSmoother:
     def test_example1_class(self):
         matrix = np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1]], dtype=float)
         smoother = Smoother(1, np.array([4, 2, 1]))
-        smoothed = smoother.apply(matrix)
+        smoothed = smoother.fit_transform(matrix)
         assert smoothed == pytest.approx(np.array([[2 / 7, 4 / 9, 0.2, 0.1, 0, 0, 0, 0.1, 0.2, 0.4, 0.2, 0.1, 0, 0, 0, 0.1, 2 / 9, 4 / 7]]))
 
     def test_example2(self):
@@ -87,7 +87,7 @@ class TestSmoother:
     def test_example2_class(self):
         matrix = np.array([[0, 1, 0, 1, 1, 0, 0, 0, 1, 1]], dtype=float)
         smoother = Smoother(1, np.array([2, 1]))
-        smoothed = smoother.apply(matrix)
+        smoothed = smoother.fit_transform(matrix)
         assert smoothed == pytest.approx(np.array([[1/3, 2/4, 2/4, 3/4, 3/4, 1/4, 0, 1/4, 3/4, 1]]))
 
     def test_example3(self):
@@ -99,5 +99,5 @@ class TestSmoother:
     def test_example3_class(self):
         matrix = np.array([[0, 1, 0, 1, 1, 0, 0, 0, 1, 1]], dtype=float)
         smoother = Smoother(2, np.array([2, 1]))
-        smoothed = smoother.apply(matrix)
+        smoothed = smoother.fit_transform(matrix)
         assert smoothed == pytest.approx(np.array([[14/36, 22/48, 9/16, 11/16, 10/16, 5/16, 2/16, 5/16, 11/16, 11/12]]))

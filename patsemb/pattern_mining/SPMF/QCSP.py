@@ -5,6 +5,9 @@ from patsemb.pattern_mining.SPMF import SPMF
 
 
 class QCSP(SPMF):
+    """
+    Mine frequent, sequential patterns using the QCSP algorithm.
+    """
 
     def __init__(self,
                  minimum_support: int = 3,
