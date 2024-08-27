@@ -44,7 +44,26 @@ class Smoother(Postprocessor):
         if self.weights.min() < 0:
             raise Exception("All weights in 'Smoother' should be larger than 0!")
 
-    def apply(self, X: np.ndarray, y=None) -> np.ndarray:
+    def fit(self, X: np.ndarray, y=None) -> 'Smoother':
+        """
+        Fit this Smoother. For smoothing there is no fitting necessary.
+
+        Parameters
+        ----------
+        X: np.ndarray of shape (n_patterns, n_samples)
+            The embedding matrix to use for fitting this postprocessor.
+        y: Ignored
+            Is passed for fitting the discretizer, but will typically not be used and
+            is only present here for API consistency by convention.
+
+        Returns
+        -------
+        self: Smoother
+            Returns the instance itself
+        """
+        return self
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
         """
         Smooth the given embedding matrix.
 
@@ -52,9 +71,6 @@ class Smoother(Postprocessor):
         ----------
         X: np.ndarray of shape (n_patterns, n_samples)
             The embedding matrix on which the smoothing should be applied.
-        y: Ignored
-            Is passed for fitting the discretizer, but will typically not be used and
-            is only present here for API consistency by convention.
 
         Returns
         -------

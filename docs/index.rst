@@ -1,9 +1,10 @@
 
-Welcome to the documentation of PaTSEmb!
-========================================
+Welcome to the documentation of ``PaTSEmb``!
+============================================
 
-PaTSEmb (Pattern-based Time Series Embedding) is a Python package for constructing
-a pattern-based embedding from time series. Ech
+Welcome to ``PaTSEmb``, a fast and extendable Python package for creating a pattern-based embedding
+of the time series. This is an embedding of the time series which contains information
+about the typical shapes are occurring at which locations in the time series.
 
 The source is available on `GitLab <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb>`_.
 
@@ -13,3 +14,13 @@ The source is available on `GitLab <https://gitlab.kuleuven.be/m-group-campus-br
 
    getting_started/installation
    getting_started/examples
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Documentation
+
+   api/discretization
+   api/pattern_based_embedding
+   api/pattern_mining
+   api/postprocess

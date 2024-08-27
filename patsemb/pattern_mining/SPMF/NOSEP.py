@@ -6,6 +6,9 @@ from patsemb.pattern_mining.SPMF import SPMF
 
 
 class NOSEP(SPMF):
+    """
+    Mine frequent, sequential patterns using the NOSEP algorithm.
+    """
 
     def __init__(self,
                  minimum_length: int = 1,
