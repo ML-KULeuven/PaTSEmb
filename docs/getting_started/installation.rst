@@ -2,18 +2,16 @@ Installation
 ============
 
 You can install ``PaTSEmb`` in various ways, described below, but the preferred way to install
-``PaTSEmb`` is via `PyPi <_install_from_pypi>`_.
+``PaTSEmb`` is via PyPI.
 
 .. note::
    To mine frequent, sequential patterns, ``PaTSEmb`` relies on the SPMF-library. Therefore,
    you also need to have Java 1.7 or higher installed on your machine.
 
-.. _install_from_pypi:
-
-From PyPi
+From PyPI
 ---------
 
-The easiest way to install ``PaTSEmb`` is via the `PyPi <https://pypi.org/project/patsemb/>`_, by
+The easiest way to install ``PaTSEmb`` is via the `PyPI <https://pypi.org/project/patsemb/>`_, by
 simply running the following command:
 
 .. code-block:: bash
