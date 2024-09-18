@@ -1,5 +1,5 @@
 Postprocess
-===============
+===========
 
 .. automodule:: patsemb.postprocess
 

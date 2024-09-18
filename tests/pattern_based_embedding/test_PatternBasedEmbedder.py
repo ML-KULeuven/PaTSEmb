@@ -69,8 +69,14 @@ class TestPatternBasedEmbedder:
         ]
         embedder = PatternBasedEmbedder()
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             embedder.fit(collection)
+
+    def test_fit_invalid_window_size(self):
+        embedder = PatternBasedEmbedder(window_sizes=500)
+        time_series = np.random.rand(400)  # Shorter than the window size
+        with pytest.raises(ValueError):
+            embedder.fit(time_series)
 
     @pytest.mark.parametrize('nb_time_series', [1, 3])
     @pytest.mark.parametrize('stride', [1, 5])
@@ -142,7 +148,7 @@ class TestPatternBasedEmbedder:
         time_series2 = generate_random_time_series(5)
         embedder = PatternBasedEmbedder()
         embedder.fit(time_series1)
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             embedder.transform(time_series2)
 
     @pytest.mark.parametrize('seed', range(1))
@@ -369,11 +375,11 @@ class TestUtils:
         for i in range(max(1, nb_attributes)):
             try:
                 get_attribute(time_series, i)
-            except Exception:
+            except ValueError:
                 pytest.fail("An exception was thrown while this shouldn't occur!")
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             get_attribute(time_series, -1)
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             get_attribute(time_series, max(1, nb_attributes))

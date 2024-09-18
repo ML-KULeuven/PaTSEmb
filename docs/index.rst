@@ -24,3 +24,4 @@ The source is available on `GitLab <https://gitlab.kuleuven.be/m-group-campus-br
    api/pattern_based_embedding
    api/pattern_mining
    api/postprocess
+   api/utils

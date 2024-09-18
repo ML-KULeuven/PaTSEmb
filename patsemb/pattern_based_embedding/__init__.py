@@ -20,7 +20,11 @@ the pattern-based embedder, and one line to call the fit_transform method!
 """
 
 from .PatternBasedEmbedder import PatternBasedEmbedder
+from .visualization import plot_time_series_and_embedding, plot_time_series, plot_embedding
 
 __all__ = [
-    'PatternBasedEmbedder'
+    'PatternBasedEmbedder',
+    'plot_time_series_and_embedding',
+    'plot_time_series',
+    'plot_embedding'
 ]

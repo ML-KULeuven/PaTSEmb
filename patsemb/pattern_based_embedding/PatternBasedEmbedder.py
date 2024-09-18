@@ -39,7 +39,7 @@ class PatternBasedEmbedder:
     pattern_miner: PatternMiner, default=QCSP()
         The pattern miner used to mine sequential patterns in the discrete
         representation
-    window_sizes: int or List[int], default=None
+    window_sizes: List[int], default=None
         The window sizes to use for discretizing the time series. If ``None`` is
         provided, then the window size of ´´discretizer´´ will be used.
     relative_support_embedding: bool, default=True
@@ -116,10 +116,16 @@ class PatternBasedEmbedder:
         if not isinstance(dataset, List):
             dataset = [dataset]
 
+        for time_series in dataset:
+            for window_size in self.window_sizes:
+                if window_size > time_series.shape[0]:
+                    raise ValueError("The time series provided to PatternBasedEmbedder.fit() should be longer than the window sizes."
+                                    f"The time series has a length of {time_series.shape[0]}, but there is a window size of {window_size}!")
+
         # Check the input dimensions
         dimensions = list(get_nb_attributes(time_series) for time_series in dataset)
         if len(set(dimensions)) > 1:
-            raise Exception("If a collection of time series is given to PatternBasedEmbedder.fit(), then "
+            raise ValueError("If a collection of time series is given to PatternBasedEmbedder.fit(), then "
                             "all time series should have the same number of attributes. Now time series with "
                             f"the following number of attributes were provided: {dimensions}")
         dimension = dimensions[0]
@@ -159,7 +165,7 @@ class PatternBasedEmbedder:
                 (attribute_data[attribute], y, attribute, window_size)
                 for attribute in range(dimension)
                 for window_size in self.window_sizes
-             ]
+            ]
             with multiprocessing.Pool(processes=min(self.n_jobs, len(jobs))) as pool:
                 pool_results = pool.starmap(self._fit_parallel, jobs)
 
@@ -218,7 +224,7 @@ class PatternBasedEmbedder:
 
         # Check if the dimension of the time series matches
         if len(self.patterns_) != get_nb_attributes(time_series):
-            raise Exception(f'The given time series has a dimension of {get_nb_attributes(time_series)}, but this embedder '
+            raise ValueError(f'The given time series has a dimension of {get_nb_attributes(time_series)}, but this embedder '
                             f'has been fitted for {len(self.patterns_)} attributes')
 
         # Create the pattern-based embedding
@@ -442,5 +448,5 @@ def get_nb_attributes(time_series: np.ndarray) -> int:
 
 def get_attribute(time_series: np.ndarray, attribute: int) -> np.array:
     if not (0 <= attribute < get_nb_attributes(time_series)):
-        raise Exception(f'Trying to access attribute {attribute} in {get_nb_attributes(time_series)}-dimensional time series!')
+        raise ValueError(f'Trying to access attribute {attribute} in {get_nb_attributes(time_series)}-dimensional time series!')
     return time_series if len(time_series.shape) == 1 else time_series[:, attribute]

@@ -1,6 +1,24 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+
+## [0.1.1] - 2024-09-18
+
+### Added
+- Added Author list.
+- Added option to plot pattern IDs of the embedding in visualization.
+- Added option to pass time stamps to the visualization plots. 
+- Method to convert timedelta values and datetime indices to a number of observations
+
+### Changed
+- Methods to plot the time series and embedding have been moved to `patsemb.pattern_based_embedding`
+ 
+### Fixed
+- Raise exception when the window size used for computing the pattern based 
+  embedding is larger than the size of the time series
+- Exceptions are changed to ValueError when seemed suitable (in `PatternBasedEmbedder`)
+
+
 ## [0.1.0] - 2024-08-27
 
 First release of `PaTSEmb`! While our toolbox is still a work in progress, 
