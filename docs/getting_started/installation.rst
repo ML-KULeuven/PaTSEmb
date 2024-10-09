@@ -18,30 +18,30 @@ simply running the following command:
 
     pip install patsemb
 
-From GitLab
+From GitHub
 -----------
 
-You can also install ``PaTSEmb`` directly from `GitLab <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb>`_.
+You can also install ``PaTSEmb`` directly from `GitHub <https://github.com/ML-KULeuven/PaTSEmb>`_.
 To install version ``X.Y.Z``, you can use the following command:
 
 .. code-block:: bash
 
-    pip install git+https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb.git@X.Y.Z
+    pip install git+https://github.com/ML-KULeuven/PaTSEmb.git@X.Y.Z
 
-The `release page <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/releases>`_ contains more
+The `release page <https://github.com/ML-KULeuven/PaTSEmb/releases>`_ contains more
 information regarding the different versions. It is also possible to install the
 latest, *unreleased* version using the following command:
 
 .. code-block:: bash
 
-    pip install git+https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb.git
+    pip install git+https://github.com/ML-KULeuven/PaTSEmb.git
 
 From source
 -----------
 
 It is also possible to install ``PaTSEmb`` directly from the source code. First, download
-the source from `GitLab <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb>`_. It is also
-possible to download the source code for a specific release on `the release page <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/releases>`_.
+the source from `GitHub <https://github.com/ML-KULeuven/PaTSEmb.git>`_. It is also
+possible to download the source code for a specific release on `the release page <https://github.com/ML-KULeuven/PaTSEmb/releases>`_.
 Unzip the files, and navigate to the root directory of the repository in the terminal.
 Finally, ``PaTSEmb`` can be installed through the following command:
 

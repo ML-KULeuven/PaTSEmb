@@ -6,7 +6,7 @@ Welcome to ``PaTSEmb``, a fast and extendable Python package for creating a patt
 of the time series. This is an embedding of the time series which contains information
 about the typical shapes are occurring at which locations in the time series.
 
-The source is available on `GitLab <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb>`_.
+The source is available on `GitHub <https://github.com/ML-KULeuven/PaTSEmb>`_.
 
 .. toctree::
    :maxdepth: 1

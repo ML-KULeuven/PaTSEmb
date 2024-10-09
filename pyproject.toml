@@ -27,9 +27,9 @@ file = "LICENSE"
 
 [project.urls]
 homepage = "https://pypi.org/project/patsemb/"
-repository = "https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb"
-changelog = "https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/blob/main/CHANGELOG.md"
-documentation = "https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154a9a19db833f1f7.pages.gitlab.kuleuven.be/"
+repository = "https://github.com/ML-KULeuven/PaTSEmb"
+changelog = "https://github.com/ML-KULeuven/PaTSEmb/blob/main/CHANGELOG.md"
+documentation = "https://PaTSEmb.readthedocs.io/"
 
 [build-system]
 requires = ["setuptools", "wheel", "build"]
