@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## Latest
+
+### Added
+
+### Changed
+ 
+### Fixed
+
+## [0.1.2] - 2024-10-09
+
+Migration from GitLab to GitHub.
 
 ## [0.1.1] - 2024-09-18
 
