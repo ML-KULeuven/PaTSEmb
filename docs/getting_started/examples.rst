@@ -26,7 +26,7 @@ We will use this embedder throughout all examples.
     )
 ..
 
-The examples described below are also available in the `examples notebook <https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/blob/main/notebooks/examples.ipynb>`_!
+The examples described below are also available in the `examples notebook <https://github.com/ML-KULeuven/PaTSEmb/blob/main/notebooks/examples.ipynb>`_!
 
 .. _example-univariate-time-series:
 

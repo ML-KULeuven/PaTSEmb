@@ -9,7 +9,7 @@ Welcome to ``PaTSEmb``, a fast and extendable Python package for creating a patt
 of the time series. This is an embedding of the time series which contains information
 about the typical shapes are occurring at which locations in the time series. 
 Below, we give a small example of how to do this, but be sure to check out the 
-[documentation](https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154a9a19db833f1f7.pages.gitlab.kuleuven.be/index.html)!
+[documentation](https://PaTSEmb.readthedocs.io/)!
 
 ## Installation
 
@@ -19,7 +19,7 @@ pip install patsemb
 ```
 If you want to mine frequent, sequential patterns, Java 1.7 or higher should also be 
 available on your machine. More information about installing ``PaTSEmb`` can be found 
-in the [documentation](https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154a9a19db833f1f7.pages.gitlab.kuleuven.be/getting_started/installation.html).
+in the [documentation](https://PaTSEmb.readthedocs.io/en/stable/installation.html).
 
 ## Example 
 
