@@ -19,7 +19,7 @@ pip install patsemb
 ```
 If you want to mine frequent, sequential patterns, Java 1.7 or higher should also be 
 available on your machine. More information about installing ``PaTSEmb`` can be found 
-in the [documentation](https://PaTSEmb.readthedocs.io/en/stable/installation.html).
+in the [documentation](https://patsemb.readthedocs.io/en/stable/getting_started/installation.html).
 
 ## Example 
 
