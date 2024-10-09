@@ -1,7 +1,9 @@
 # PaTSEmb
 
-[![pipeline status](https://gitlab.kuleuven.be/u0143709/patsemb/badges/main/pipeline.svg)](https://gitlab.kuleuven.be/u0143709/patsemb/-/commits/main)
-[![coverage report](https://gitlab.kuleuven.be/u0143709/patsemb/badges/main/coverage.svg)](https://gitlab.kuleuven.be/u0143709/patsemb/-/commits/main)
+[![PyPi Version](https://img.shields.io/pypi/v/patsemb.svg)](https://pypi.org/project/patsemb/)
+[![Downloads](https://static.pepy.tech/badge/patsemb)](https://pepy.tech/project/patsemb)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/patsemb)](https://pypi.python.org/pypi/patsemb/)
+[![PyPI license](https://img.shields.io/pypi/l/patsemb.svg)](https://pypi.python.org/pypi/patsemb/)
 
 Welcome to ``PaTSEmb``, a fast and extendable Python package for creating a pattern-based embedding
 of the time series. This is an embedding of the time series which contains information
@@ -22,7 +24,7 @@ in the [documentation](https://patsemb-u0143709-3a07c9d27a51b62b1b2bad2f623ad154
 ## Example 
 
 The code snippet below shows how to create the pattern-based embedding of a 
-time series. Be sure to check out the [example notebook](https://gitlab.kuleuven.be/m-group-campus-brugge/dtai_public/patsemb/-/blob/main/notebooks/examples.ipynb?ref_type=heads) 
+time series. Be sure to check out the [example notebook](notebooks/examples) 
 for more examples!
 
 ```python
