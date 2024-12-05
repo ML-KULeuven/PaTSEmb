@@ -70,12 +70,12 @@ class TestLogisticRegressionSegmentor:
         pred = LogisticRegressionSegmentor().fit_predict_proba(pattern_based_embedding)
         assert pred.shape[0] == pattern_based_embedding.shape[1]
 
-    # def test_fit_predict_proba_one_n_segment(self):
-    #     univariate_time_series = np.sin(np.arange(0, 50, 0.05)) + np.random.normal(0, 0.25, 1000)
-    #     pattern_based_embedding = PatternBasedEmbedder().fit_transform(univariate_time_series)
-    #     pred = LogisticRegressionSegmentor(n_segments=3).fit_predict_proba(pattern_based_embedding)
-    #     assert pred.shape == (pattern_based_embedding.shape[1], 3)
-    #
+    def test_fit_predict_proba_one_n_segment(self):
+        univariate_time_series = np.sin(np.arange(0, 50, 0.05)) + np.random.normal(0, 0.25, 1000)
+        pattern_based_embedding = PatternBasedEmbedder().fit_transform(univariate_time_series)
+        pred = LogisticRegressionSegmentor(n_segments=3).fit_predict_proba(pattern_based_embedding)
+        assert pred.shape == (pattern_based_embedding.shape[1], 3)
+
     # def test_fit_predict_proba_multiple_jobs(self):
     #     univariate_time_series = np.sin(np.arange(0, 50, 0.05)) + np.random.normal(0, 0.25, 1000)
     #     pattern_based_embedding = PatternBasedEmbedder().fit_transform(univariate_time_series)
