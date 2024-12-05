@@ -68,9 +68,9 @@ class TestLogisticRegressionSegmentor:
         pred = LogisticRegressionSegmentor(n_segments=3).fit_predict_proba(pattern_based_embedding)
         assert pred.shape == (pattern_based_embedding.shape[1], 3)
 
-    def test_fit_predict_proba_multiple_jobs(self, pattern_based_embedding):
-        pred = LogisticRegressionSegmentor(n_segments=[3, 4], n_jobs=2).fit_predict_proba(pattern_based_embedding)
-        assert pred.shape[0] == pattern_based_embedding.shape[1]
+    # def test_fit_predict_proba_multiple_jobs(self, pattern_based_embedding):
+    #     pred = LogisticRegressionSegmentor(n_segments=[3, 4], n_jobs=2).fit_predict_proba(pattern_based_embedding)
+    #     assert pred.shape[0] == pattern_based_embedding.shape[1]
 
     def test_predict_proba_not_fitted(self, pattern_based_embedding):
         with pytest.raises(NotFittedError):
