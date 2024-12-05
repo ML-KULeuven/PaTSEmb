@@ -21,14 +21,14 @@ simply running the following command:
 From GitHub
 -----------
 
-You can also install ``PaTSEmb`` directly from `GitHub <https://github.com/ML-KULeuven/PaTSEmb>`_.
+You can also install ``PaTSEmb`` directly from `GitHub`_.
 To install version ``X.Y.Z``, you can use the following command:
 
 .. code-block:: bash
 
     pip install git+https://github.com/ML-KULeuven/PaTSEmb.git@X.Y.Z
 
-The `release page <https://github.com/ML-KULeuven/PaTSEmb/releases>`_ contains more
+The `release page`_ contains more
 information regarding the different versions. It is also possible to install the
 latest, *unreleased* version using the following command:
 
@@ -40,11 +40,15 @@ From source
 -----------
 
 It is also possible to install ``PaTSEmb`` directly from the source code. First, download
-the source from `GitHub <https://github.com/ML-KULeuven/PaTSEmb.git>`_. It is also
-possible to download the source code for a specific release on `the release page <https://github.com/ML-KULeuven/PaTSEmb/releases>`_.
+the source from `GitHub`_. It is also
+possible to download the source code for a specific release on the `release page`_.
 Unzip the files, and navigate to the root directory of the repository in the terminal.
 Finally, ``PaTSEmb`` can be installed through the following command:
 
 .. code-block:: bash
 
     pip install .
+
+
+.. _GitHub: https://github.com/ML-KULeuven/PaTSEmb
+.. _release page: https://github.com/ML-KULeuven/PaTSEmb/releases
