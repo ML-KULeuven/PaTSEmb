@@ -110,12 +110,12 @@ class LogisticRegressionSegmentor(ProbabilisticSemanticSegmentor):
         else:
 
             # Compute clusters with different number of segments
-            args = [(X.T, n_segments) for n_segments in self.n_segments]
+            args = [(X.T, n_segments, self.kwargs) for n_segments in self.n_segments]
             if self.n_jobs > 1:
                 with multiprocessing.Pool(self.n_jobs) as pool:
-                    pool_results = pool.starmap(self._compute_kmeans_segmentation, args)
+                    pool_results = pool.starmap(_compute_kmeans_segmentation, args)
             else:
-                pool_results = [self._compute_kmeans_segmentation(*arg) for arg in args]
+                pool_results = [_compute_kmeans_segmentation(*arg) for arg in args]
 
             # Identify the best cluster with maximum silhouette score
             index_largest_silhouette_score = np.argmax([silhouette_avg for silhouette_avg, *_ in pool_results])
@@ -133,17 +133,18 @@ class LogisticRegressionSegmentor(ProbabilisticSemanticSegmentor):
             raise NotFittedError('Call the fit method before predicting!')
         return self.logistic_regression_.predict_proba(X.T)
 
-    def _compute_kmeans_segmentation(self, X: np.ndarray, n_segments: int):
-        # Cluster the embedding
-        k_means = KMeans(n_clusters=n_segments, **self.k_means_kwargs)
-        segmentation = k_means.fit_predict(X)
 
-        # Compute silhouette score
-        if len(set(segmentation)) != n_segments:
-            silhouette_avg = -1
-        else:
-            n = X.shape[0]
-            sample_size = n if n < 2000 else 2000 + int(0.1 * (n - 2000))
-            silhouette_avg = silhouette_score(X, segmentation, sample_size=sample_size)
+def _compute_kmeans_segmentation(X: np.ndarray, n_segments: int, kwargs: dict):
+    # Cluster the embedding
+    k_means = KMeans(n_clusters=n_segments, **kwargs)
+    segmentation = k_means.fit_predict(X)
 
-        return silhouette_avg, segmentation
+    # Compute silhouette score
+    if len(set(segmentation)) != n_segments:
+        silhouette_avg = -1
+    else:
+        n = X.shape[0]
+        sample_size = n if n < 2000 else 2000 + int(0.1 * (n - 2000))
+        silhouette_avg = silhouette_score(X, segmentation, sample_size=sample_size)
+
+    return silhouette_avg, segmentation
