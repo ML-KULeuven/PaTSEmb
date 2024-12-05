@@ -19,9 +19,6 @@ The source is available on `GitHub <https://github.com/ML-KULeuven/PaTSEmb>`_.
 .. toctree::
    :maxdepth: 1
    :caption: Documentation
+   :glob:
 
-   api/discretization
-   api/pattern_based_embedding
-   api/pattern_mining
-   api/postprocess
-   api/utils
+   api/*
