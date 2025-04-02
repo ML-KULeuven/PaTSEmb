@@ -67,7 +67,7 @@ class SPMF(PatternMiner, abc.ABC):
             output_file_name = tmp_file.name
 
         # Execute the java command to mine the sequences
-        command = f"java -jar {pathlib.Path(__file__).parent}/spmf.jar run {self.mining_algorithm()} {input_file_name} {output_file_name} {self.hyperparameters()}"
+        command = f'java -jar "{pathlib.Path(__file__).parent}/spmf.jar" run {self.mining_algorithm()} {input_file_name} {output_file_name} {self.hyperparameters()}'
         output = subprocess.run(command, shell=True, capture_output=True)
 
         # Read the output file
